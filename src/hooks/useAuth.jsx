@@ -13,7 +13,8 @@ import {
   getStoredUserId,
   isTokenValid, 
   clearTokenStorage,
-  willTokenExpireSoon 
+  willTokenExpireSoon,
+  getTokenTimeRemaining
 } from '../utils/auth.jsx';
 import { 
   ERROR_MESSAGES, 
@@ -77,6 +78,7 @@ export function useAuth() {
 
   /**
    * Checks authentication status on mount and validates token
+   * On page reload, tokens are cleared from memory and refetched from backend (S3)
    */
   const checkAuthStatus = useCallback(async () => {
     if (isCheckingAuth.current) return;
@@ -96,7 +98,8 @@ export function useAuth() {
 
       setCanvaUserId(userId);
 
-      // Check if we have a valid stored token
+      // Check if we have a valid stored token in memory
+      // Note: On page reload, this will always be false since we use in-memory storage
       if (isTokenValid()) {
         setIsAuthenticated(true);
         setTokenExpiry(new Date(Date.now() + TOKEN_CONFIG.EXPIRY_MS));
@@ -104,21 +107,19 @@ export function useAuth() {
         return;
       }
 
-      // Try to get existing token from backend
-      const storedUserId = getStoredUserId();
-      if (storedUserId && storedUserId === userId) {
-        const tokenResponse = await getStoredUserToken(storedUserId);
-        
-        if (tokenResponse.success && tokenResponse.token) {
-          storeToken(tokenResponse.token, storedUserId);
-          setIsAuthenticated(true);
-          setTokenExpiry(new Date(Date.now() + TOKEN_CONFIG.EXPIRY_MS));
-          setupTokenRefresh();
-          return;
-        }
+      // Token not in memory (expected on reload) - try to refetch from backend/S3
+      // This ensures tokens are always fresh and not persisted locally
+      const tokenResponse = await getStoredUserToken(userId);
+      
+      if (tokenResponse.success && tokenResponse.token) {
+        storeToken(tokenResponse.token, userId);
+        setIsAuthenticated(true);
+        setTokenExpiry(new Date(Date.now() + TOKEN_CONFIG.EXPIRY_MS));
+        setupTokenRefresh();
+        return;
       }
 
-      // No valid token found
+      // No valid token found - user needs to authenticate
       setIsAuthenticated(false);
       clearTokenStorage();
       
@@ -352,12 +353,9 @@ export function useTokenExpiry(warningHours = 24) {
       setShowWarning(willExpire);
 
       if (willExpire) {
-        // Calculate remaining time
-        const expiryTime = sessionStorage.getItem(TOKEN_CONFIG.EXPIRY_KEY);
-        if (expiryTime) {
-          const remaining = parseInt(expiryTime) - Date.now();
-          setTimeRemaining(Math.max(0, remaining));
-        }
+        // Calculate remaining time using the token time remaining function
+        const remaining = getTokenTimeRemaining();
+        setTimeRemaining(Math.max(0, remaining));
       }
     };
 

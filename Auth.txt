@@ -1,0 +1,43 @@
+  We would like to clarify how our application manages credentials and login tokens with Zotok    
+   APIs.
+
+  Initial Credentials:
+  We request the following credentials from the user only once:
+
+  clientId: dde4018b3e7fc34c166b1c625660abc6
+
+  workspaceId: 6f3c81f1-13a3-4e0f-bfde-a2b71f2636bf
+
+  clientSecret: 59ff8f971648d5e1cbe5cc341a752fe0a48949628822ee92d175ac6719c47f78
+
+  Login Token Generation:
+  Using these credentials, the Zotok API returns a login token. This token, together with the     
+  original credentials, is securely stored in an S3 bucket, where each user has a dedicated       
+  file.
+
+  Token Lifecycle:
+
+  The login credentials are not requested again unless there is a loss of data.
+
+  The backend server handles silent refresh of the login token before its 28-day expiry,
+  ensuring uninterrupted access.
+
+  Application Usage:
+
+  For active usage within the application, the login token is stored in memory-based storage      
+  only.
+
+  This ensures tokens are never persisted to browser storage (localStorage/sessionStorage),       
+  providing enhanced security against XSS attacks.
+
+  On page reload, tokens are automatically cleared from memory and refetched from S3, ensuring    
+   users always have the latest valid tokens.
+
+  This approach balances performance during active sessions while maintaining maximum security    
+   - tokens exist only in memory and are automatically refreshed from our secure backend.
+
+  This approach ensures that user credentials are only collected once, tokens are refreshed       
+  securely, and sensitive data is managed with enhanced security without repeated prompts to      
+  the user.
+
+  Please let us know if you need any further clarification or adjustments.

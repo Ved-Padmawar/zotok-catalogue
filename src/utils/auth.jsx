@@ -1,44 +1,15 @@
-// Modern authentication utilities with secure token management
+// Modern authentication utilities with secure in-memory token management
 
 import { TOKEN_CONFIG } from './constants.jsx';
 
 /**
- * Storage manager with fallback support
+ * In-memory storage manager for secure token handling
+ * Tokens are cleared on page reload, requiring refetch from backend
  */
 class StorageManager {
   constructor() {
-    this.storage = this.getAvailableStorage();
-  }
-
-  /**
-   * Gets the best available storage method
-   * @returns {Storage|Object} Storage interface
-   */
-  getAvailableStorage() {
-    try {
-      // Try sessionStorage first (preferred for security)
-      if (typeof sessionStorage !== 'undefined') {
-        sessionStorage.setItem('test', 'test');
-        sessionStorage.removeItem('test');
-        return sessionStorage;
-      }
-    } catch (e) {
-      console.warn('sessionStorage not available');
-    }
-
-    try {
-      // Fallback to localStorage
-      if (typeof localStorage !== 'undefined') {
-        localStorage.setItem('test', 'test');
-        localStorage.removeItem('test');
-        return localStorage;
-      }
-    } catch (e) {
-      console.warn('localStorage not available');
-    }
-
-    // Memory fallback for environments without storage
-    return new MemoryStorage();
+    // Always use in-memory storage to prevent token persistence
+    this.storage = new MemoryStorage();
   }
 
   setItem(key, value) {
@@ -68,7 +39,7 @@ class StorageManager {
 
   clear() {
     try {
-      // Only clear our keys, not all storage
+      // Clear all our token-related keys
       const keysToRemove = [
         TOKEN_CONFIG.STORAGE_KEY,
         TOKEN_CONFIG.USER_ID_KEY,
@@ -366,7 +337,7 @@ export function getTokenInfo() {
       timeRemaining: getTokenTimeRemaining(),
       willExpireSoon: willTokenExpireSoon(24),
       isEncrypted,
-      storage: storage.storage.constructor.name
+      storage: 'MemoryStorage' // Always in-memory now
     };
   } catch (error) {
     console.warn('Failed to get token info:', error);
@@ -460,22 +431,10 @@ export function createTokenRefreshReminder(callback, hoursBeforeExpiry = 24) {
  */
 export function secureLogout() {
   try {
-    // Clear token storage
+    // Clear in-memory token storage
     clearTokenStorage();
     
-    // Clear any cached data that might contain sensitive info
-    if (typeof sessionStorage !== 'undefined') {
-      const keysToRemove = [];
-      for (let i = 0; i < sessionStorage.length; i++) {
-        const key = sessionStorage.key(i);
-        if (key && (key.includes('auth') || key.includes('token') || key.includes('user'))) {
-          keysToRemove.push(key);
-        }
-      }
-      keysToRemove.forEach(key => sessionStorage.removeItem(key));
-    }
-    
-    console.log('Secure logout completed');
+    console.log('Secure logout completed - all tokens cleared from memory');
   } catch (error) {
     console.warn('Error during secure logout:', error);
   }
