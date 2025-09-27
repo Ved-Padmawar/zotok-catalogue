@@ -40,13 +40,64 @@ export const App = () => {
   const [settingsMessage, setSettingsMessage] = useState<string>("");
   const [isEditingPhone, setIsEditingPhone] = useState<boolean>(false);
   const [tempPhoneNumber, setTempPhoneNumber] = useState<string>("");
-  const [currentTheme, setCurrentTheme] = useState<"light" | "dark">(() => {
-    if (typeof window !== "undefined") {
-      const savedTheme = localStorage.getItem("zotok-theme-preference");
-      return (savedTheme as "light" | "dark") || "light";
-    }
-    return "light";
-  });
+
+  // Proper Canva SDK v2 theme detection using design tokens
+  useEffect(() => {
+    const detectCanvaTheme = () => {
+      // Wait for AppUiProvider to load Canva's design tokens
+      const canvas = getComputedStyle(document.documentElement).getPropertyValue('--ui-kit-color-canvas').trim();
+      
+      if (canvas) {
+        // Parse the CSS color value to determine if it's light or dark
+        let theme = 'light';
+        
+        // Check if it's an RGB/RGBA value
+        if (canvas.includes('rgb')) {
+          const match = canvas.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+          if (match) {
+            const r = parseInt(match[1]);
+            const g = parseInt(match[2]);
+            const b = parseInt(match[3]);
+            // Calculate luminance
+            const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+            theme = luminance > 0.5 ? 'light' : 'dark';
+          }
+        }
+        // Check if it's a hex value
+        else if (canvas.startsWith('#')) {
+          const hex = canvas.slice(1);
+          const r = parseInt(hex.substr(0, 2), 16);
+          const g = parseInt(hex.substr(2, 2), 16);
+          const b = parseInt(hex.substr(4, 2), 16);
+          const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+          theme = luminance > 0.5 ? 'light' : 'dark';
+        }
+        
+        document.documentElement.setAttribute('data-theme', theme);
+      } else {
+        // AppUiProvider hasn't loaded design tokens yet, retry
+        setTimeout(detectCanvaTheme, 100);
+      }
+    };
+
+    // Initial detection after a short delay to allow AppUiProvider to initialize
+    const timer = setTimeout(detectCanvaTheme, 200);
+
+    // Watch for changes in CSS custom properties
+    const observer = new MutationObserver(() => {
+      detectCanvaTheme();
+    });
+
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['style']
+    });
+
+    return () => {
+      clearTimeout(timer);
+      observer.disconnect();
+    };
+  }, []);
 
   // Network status monitoring
   useEffect(() => {
@@ -64,17 +115,8 @@ export const App = () => {
 
   useEffect(() => {
     initializeApp();
-
-    // Set initial theme
-    document.documentElement.setAttribute("data-theme", currentTheme);
-    document.body.setAttribute("data-theme", currentTheme);
   }, []);
 
-  // Update theme when currentTheme changes
-  useEffect(() => {
-    document.documentElement.setAttribute("data-theme", currentTheme);
-    document.body.setAttribute("data-theme", currentTheme);
-  }, [currentTheme]);
 
   const initializeApp = async () => {
     try {
@@ -229,19 +271,6 @@ export const App = () => {
     }
   };
 
-  const toggleTheme = () => {
-    const newTheme = currentTheme === "light" ? "dark" : "light";
-    setCurrentTheme(newTheme);
-
-    // Apply theme to document elements
-    document.documentElement.setAttribute("data-theme", newTheme);
-    document.body.setAttribute("data-theme", newTheme);
-
-    // Save theme preference
-    localStorage.setItem("zotok-theme-preference", newTheme);
-
-    console.log("🎨 Theme switched to:", newTheme);
-  };
 
   const handleEditPhone = () => {
     setIsEditingPhone(true);
@@ -317,22 +346,6 @@ export const App = () => {
                     </div>
                     <div className="login-title">Connect to Zotok</div>
                   </div>
-                  <button
-                    className="login-theme-toggle-btn"
-                    onClick={toggleTheme}
-                    aria-label={`Switch to ${currentTheme === "light" ? "dark" : "light"} theme`}
-                  >
-                    {currentTheme === "light" ? (
-                      <svg className="icon" viewBox="0 0 24 24">
-                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-                      </svg>
-                    ) : (
-                      <svg className="icon" viewBox="0 0 24 24">
-                        <circle cx="12" cy="12" r="5" />
-                        <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
-                      </svg>
-                    )}
-                  </button>
                 </div>
                 <div className="login-subtitle">
                   Enter your workspace credentials to browse products.
@@ -353,35 +366,6 @@ export const App = () => {
                   </svg>
                 </div>
                 <h1 className="main-title">Zotok Browser</h1>
-              </div>
-              <div className="header-actions">
-                <button
-                  className="theme-toggle-btn"
-                  onClick={toggleTheme}
-                  aria-label={`Switch to ${currentTheme === "light" ? "dark" : "light"} theme`}
-                >
-                  {currentTheme === "light" ? (
-                    <svg className="icon" viewBox="0 0 24 24">
-                      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-                    </svg>
-                  ) : (
-                    <svg className="icon" viewBox="0 0 24 24">
-                      <circle cx="12" cy="12" r="5" />
-                      <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
-                    </svg>
-                  )}
-                </button>
-                <button
-                  className="logout-btn"
-                  onClick={handleLogout}
-                  aria-label="Logout"
-                >
-                  <svg className="icon" viewBox="0 0 24 24">
-                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                    <polyline points="16 17 21 12 16 7" />
-                    <line x1="21" y1="12" x2="9" y2="12" />
-                  </svg>
-                </button>
               </div>
             </div>
 
