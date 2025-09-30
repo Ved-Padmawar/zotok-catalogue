@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from "react";
+import { Rows, FormField, TextInput, Button } from "@canva/app-ui-kit";
 import { validateCredentials } from "../types/index.jsx";
 import { VALIDATION, ERROR_MESSAGES } from "../utils/constants.jsx";
 
@@ -37,9 +38,10 @@ export default function AuthForm({ onAuthSuccess, error }) {
    * @param {string} value - Field value
    */
   const handleInputChange = useCallback((field, value) => {
+    const safeValue = value || '';
     setFormData(prev => ({
       ...prev,
-      [field]: value
+      [field]: safeValue
     }));
 
     // Clear field error when user starts typing
@@ -74,27 +76,27 @@ export default function AuthForm({ onAuthSuccess, error }) {
     let error = '';
 
     if (!value?.trim()) {
-      error = `${getFieldLabel(field)} is required`;
+      error = "You missed this one";
     } else if (value.length < VALIDATION.MIN_LENGTH) {
-      error = `${getFieldLabel(field)} must be at least ${VALIDATION.MIN_LENGTH} characters`;
+      error = `Invalid ${getFieldLabel(field)}. Please try again.`;
     } else if (value.length > VALIDATION.MAX_LENGTH) {
-      error = `${getFieldLabel(field)} must be less than ${VALIDATION.MAX_LENGTH} characters`;
+      error = `Invalid ${getFieldLabel(field)}. Please try again.`;
     } else {
       // Field-specific validation
       switch (field) {
         case 'workspaceId':
           if (!VALIDATION.WORKSPACE_ID.test(value)) {
-            error = 'Workspace ID can only contain letters, numbers, and hyphens';
+            error = `Invalid ${getFieldLabel(field)}. Please try again.`;
           }
           break;
         case 'clientId':
           if (!VALIDATION.CLIENT_ID.test(value)) {
-            error = 'Client ID can only contain letters and numbers';
+            error = `Invalid ${getFieldLabel(field)}. Please try again.`;
           }
           break;
         case 'clientSecret':
           if (value.length < 8) {
-            error = 'Client Secret must be at least 8 characters';
+            error = `Invalid ${getFieldLabel(field)}. Please try again.`;
           }
           break;
       }
@@ -115,9 +117,9 @@ export default function AuthForm({ onAuthSuccess, error }) {
    */
   const getFieldLabel = useCallback((field) => {
     const labels = {
-      workspaceId: 'Workspace ID',
-      clientId: 'Client ID',
-      clientSecret: 'Client Secret'
+      workspaceId: 'Workspace id',
+      clientId: 'Client id',
+      clientSecret: 'Client secret'
     };
     return labels[field] || field;
   }, []);
@@ -162,7 +164,7 @@ export default function AuthForm({ onAuthSuccess, error }) {
     try {
       await onAuthSuccess(formData);
     } catch (err) {
-      console.error('Authentication failed:', err);
+      // Authentication error is handled by parent component
     } finally {
       setIsLoading(false);
     }
@@ -204,136 +206,82 @@ export default function AuthForm({ onAuthSuccess, error }) {
 
   return (
     <form onSubmit={handleSubmit} className="compact-form" noValidate>
-      {/* Workspace ID Field */}
-      <div className="form-field">
-        <label htmlFor="workspaceId">
-          Workspace ID <span style={{ color: 'var(--error-color)' }}>*</span>
-        </label>
-        <input
-          ref={workspaceIdRef}
-          id="workspaceId"
-          type="text"
-          className="form-input"
-          placeholder="e.g., my-company-workspace"
-          value={formData.workspaceId}
-          onChange={(e) => handleInputChange('workspaceId', e.target.value)}
-          onBlur={() => handleFieldBlur('workspaceId')}
-          onKeyDown={(e) => handleKeyPress(e, 'workspaceId')}
-          disabled={isLoading}
-          autoComplete="organization"
-          autoCapitalize="none"
-          spellCheck="false"
-          aria-invalid={touched.workspaceId && fieldErrors.workspaceId ? 'true' : 'false'}
-          aria-describedby={fieldErrors.workspaceId ? 'workspaceId-error' : undefined}
+      <Rows spacing="2u">
+        {/* Workspace ID Field */}
+        <FormField
+          label="Workspace id *"
+          control={(props) => (
+            <TextInput
+              {...props}
+              ref={workspaceIdRef}
+              placeholder="e.g., my-company-workspace"
+              value={formData.workspaceId || ''}
+              onChange={(value) => handleInputChange('workspaceId', value)}
+              onBlur={() => handleFieldBlur('workspaceId')}
+              onKeyDown={(e) => handleKeyPress(e, 'workspaceId')}
+              disabled={isLoading}
+              autoComplete="organization"
+            />
+          )}
+          error={touched.workspaceId && fieldErrors.workspaceId ? fieldErrors.workspaceId : undefined}
         />
-        {touched.workspaceId && fieldErrors.workspaceId && (
-          <div 
-            id="workspaceId-error"
-            className="field-error"
-            role="alert"
-          >
-            {fieldErrors.workspaceId}
-          </div>
-        )}
-      </div>
 
-      {/* Client ID Field */}
-      <div className="form-field">
-        <label htmlFor="clientId">
-          Client ID <span style={{ color: 'var(--error-color)' }}>*</span>
-        </label>
-        <input
-          ref={clientIdRef}
-          id="clientId"
-          type="text"
-          className="form-input"
-          placeholder="Enter your client ID"
-          value={formData.clientId}
-          onChange={(e) => handleInputChange('clientId', e.target.value)}
-          onBlur={() => handleFieldBlur('clientId')}
-          onKeyDown={(e) => handleKeyPress(e, 'clientId')}
-          disabled={isLoading}
-          autoComplete="username"
-          autoCapitalize="none"
-          spellCheck="false"
-          aria-invalid={touched.clientId && fieldErrors.clientId ? 'true' : 'false'}
-          aria-describedby={fieldErrors.clientId ? 'clientId-error' : undefined}
+        {/* Client ID Field */}
+        <FormField
+          label="Client id *"
+          control={(props) => (
+            <TextInput
+              {...props}
+              ref={clientIdRef}
+              placeholder="Enter your client ID"
+              value={formData.clientId || ''}
+              onChange={(value) => handleInputChange('clientId', value)}
+              onBlur={() => handleFieldBlur('clientId')}
+              onKeyDown={(e) => handleKeyPress(e, 'clientId')}
+              disabled={isLoading}
+              autoComplete="username"
+            />
+          )}
+          error={touched.clientId && fieldErrors.clientId ? fieldErrors.clientId : undefined}
         />
-        {touched.clientId && fieldErrors.clientId && (
-          <div 
-            id="clientId-error"
-            className="field-error"
-            role="alert"
-          >
-            {fieldErrors.clientId}
+
+        {/* Client Secret Field */}
+        <FormField
+          label="Client secret *"
+          control={(props) => (
+            <TextInput
+              {...props}
+              ref={clientSecretRef}
+              type={showPassword ? "text" : "password"}
+              placeholder="Enter your client secret"
+              value={formData.clientSecret || ''}
+              onChange={(value) => handleInputChange('clientSecret', value)}
+              onBlur={() => handleFieldBlur('clientSecret')}
+              onKeyDown={(e) => handleKeyPress(e, 'clientSecret')}
+              disabled={isLoading}
+              autoComplete="new-password"
+            />
+          )}
+          error={touched.clientSecret && fieldErrors.clientSecret ? fieldErrors.clientSecret : undefined}
+        />
+
+        {/* General Error Message */}
+        {error && (
+          <div className="auth-error" role="alert">
+            {error}
           </div>
         )}
-      </div>
 
-      {/* Client Secret Field */}
-      <div className="form-field">
-        <label htmlFor="clientSecret">
-          Client Secret <span style={{ color: 'var(--error-color)' }}>*</span>
-        </label>
-        <div style={{ position: 'relative' }}>
-          <input
-            ref={clientSecretRef}
-            id="clientSecret"
-            type={showPassword ? "text" : "password"}
-            className="form-input"
-            placeholder="Enter your client secret"
-            value={formData.clientSecret}
-            onChange={(e) => handleInputChange('clientSecret', e.target.value)}
-            onBlur={() => handleFieldBlur('clientSecret')}
-            onKeyDown={(e) => handleKeyPress(e, 'clientSecret')}
-            disabled={isLoading}
-            autoComplete="new-password"
-            style={{ paddingRight: '40px' }}
-            aria-invalid={touched.clientSecret && fieldErrors.clientSecret ? 'true' : 'false'}
-            aria-describedby={fieldErrors.clientSecret ? 'clientSecret-error' : undefined}
-          />
-          <button
-            type="button"
-            onClick={togglePasswordVisibility}
-            disabled={isLoading}
-            className="password-toggle-btn"
-            aria-label={showPassword ? 'Hide password' : 'Show password'}
-            title={showPassword ? 'Hide password' : 'Show password'}
-          >
-            {showPassword ? 
-              <svg className="icon" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> : 
-              <svg className="icon" viewBox="0 0 24 24"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07l-5.27-5.27"/></svg>
-            }
-          </button>
-        </div>
-        {touched.clientSecret && fieldErrors.clientSecret && (
-          <div 
-            id="clientSecret-error"
-            className="field-error"
-            role="alert"
-          >
-            {fieldErrors.clientSecret}
-          </div>
-        )}
-      </div>
-
-      {/* General Error Message */}
-      {error && (
-        <div className="auth-error" role="alert">
-          {error}
-        </div>
-      )}
-
-      {/* Form Actions */}
-      <div className="form-actions">
-        <button
-          type="submit"
-          className="btn btn-primary"
+        {/* Form Actions */}
+        <Button
+          variant="primary"
+          stretch
+          onClick={handleSubmit}
           disabled={!isFormValid || isLoading}
         >
-          {isLoading ? 'Connecting...' : 'Connect to Zotok'}
-        </button>
-      </div>
+          {isLoading ? 'Connecting...' : 'Connect to zotok'}
+        </Button>
+      </Rows>
 
       <style jsx>{`
         .password-toggle-btn {

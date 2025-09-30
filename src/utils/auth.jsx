@@ -151,7 +151,7 @@ export function storeToken(token, canvaUserId, options = {}) {
     // Store encryption flag
     storage.setItem(`${TOKEN_CONFIG.STORAGE_KEY}_encrypted`, encrypt.toString());
     
-    console.log('Token stored successfully');
+    // Token stored successfully
   } catch (error) {
     console.error('Failed to store token:', error);
   }
@@ -238,7 +238,7 @@ export function clearTokenStorage() {
     storage.removeItem(TOKEN_CONFIG.EXPIRY_KEY);
     storage.removeItem(`${TOKEN_CONFIG.STORAGE_KEY}_encrypted`);
     
-    console.log('Token storage cleared');
+    // Token storage cleared
   } catch (error) {
     console.warn('Failed to clear token storage:', error);
   }
@@ -434,7 +434,7 @@ export function secureLogout() {
     // Clear in-memory token storage
     clearTokenStorage();
     
-    console.log('Secure logout completed - all tokens cleared from memory');
+    // Secure logout completed - all tokens cleared from memory
   } catch (error) {
     console.warn('Error during secure logout:', error);
   }

@@ -36,15 +36,15 @@ export function validateCredentials(credentials) {
   const errors = {};
   
   if (!credentials.workspaceId?.trim()) {
-    errors.workspaceId = 'Workspace ID is required';
+    errors.workspaceId = 'Workspace id is required';
   }
-  
+
   if (!credentials.clientId?.trim()) {
-    errors.clientId = 'Client ID is required';
+    errors.clientId = 'Client id is required';
   }
-  
+
   if (!credentials.clientSecret?.trim()) {
-    errors.clientSecret = 'Client Secret is required';
+    errors.clientSecret = 'Client secret is required';
   }
   
   return {

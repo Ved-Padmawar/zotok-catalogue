@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from "react";
+import { Rows, Title, Button, Box, Text, ImageBox, ImageCard, TypographyCard, Columns, Column } from "@canva/app-ui-kit";
 import { useDragDrop } from "../hooks/useDragDrop.jsx";
 import { CURRENCY } from "../utils/constants.jsx";
 import WhatsAppLink from "./WhatsAppLink.jsx";
@@ -119,7 +120,7 @@ export default function ProductDetail({
   }, [handleProductClick, product]);
 
   /**
-   * Creates a draggable field component with new design
+   * Creates a clean draggable field component matching the mockup design
    */
   const DetailField = useCallback(({ label, value, elementKey, icon = null }) => {
     if (!value) return null;
@@ -128,16 +129,24 @@ export default function ProductDetail({
     const stringValue = String(value);
 
     return (
-      <div className="detail-field">
-        <div className="detail-field-label">
+      <Rows spacing="1u">
+        <Text size="small" color="secondary" style={{ fontWeight: '500' }}>
           {icon && <span className="field-icon">{icon}</span>}
           {label}
-        </div>
-        <div 
-          className={`detail-field-value ${isLoading ? 'loading' : ''}`}
+        </Text>
+        <div
+          style={{
+            padding: '12px 16px',
+            backgroundColor: 'var(--ui-kit-color-surface)',
+            border: '1px solid var(--ui-kit-color-border)',
+            borderRadius: '8px',
+            cursor: isLoading ? 'not-allowed' : 'pointer',
+            opacity: isLoading ? 0.6 : 1,
+            transition: 'all 0.15s ease'
+          }}
           draggable={!isLoading}
-          onDragStart={(e) => handleTextAction(stringValue, elementKey, e)}
           onClick={() => handleTextAction(stringValue, elementKey)}
+          onDragStart={(e) => handleTextAction(stringValue, elementKey, e)}
           role="button"
           tabIndex={0}
           onKeyDown={(e) => {
@@ -147,64 +156,15 @@ export default function ProductDetail({
             }
           }}
           aria-label={`Add ${label} to design: ${stringValue}`}
-          title={`Click or drag to add "${stringValue}" to your design`}
         >
-          {stringValue}
+          <Text size="small" style={{ color: 'var(--ui-kit-color-text-primary)' }}>
+            {stringValue}
+          </Text>
         </div>
-      </div>
+      </Rows>
     );
   }, [loadingStates, handleTextAction]);
 
-  /**
-   * Creates a draggable image component with enhanced error handling
-   */
-  const DetailImage = useCallback(({ imageUrl, altText, index }) => {
-    const key = `image-${index}`;
-    const isLoading = loadingStates[key];
-    const hasError = imageErrors[index];
-
-    if (hasError) {
-      return (
-        <div className="detail-image error">
-          <div className="image-error-content">
-            <span className="image-error-icon">🖼️</span>
-            <span className="image-error-text">Image unavailable</span>
-          </div>
-        </div>
-      );
-    }
-
-    return (
-      <div
-        className={`detail-image ${isLoading ? 'loading' : ''}`}
-        draggable={!isLoading}
-        onDragStart={(e) => handleImageAction(imageUrl, altText, key, e)}
-        onClick={() => handleImageAction(imageUrl, altText, key)}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            handleImageAction(imageUrl, altText, key);
-          }
-        }}
-        aria-label={`Add ${altText} to design`}
-        title="Click or drag to add this image to your design"
-      >
-        <img
-          src={imageUrl}
-          alt={altText}
-          loading="lazy"
-          onError={() => handleImageError(index)}
-        />
-        {isLoading && (
-          <div className="image-loading-overlay">
-            <div className="loading-spinner small" />
-          </div>
-        )}
-      </div>
-    );
-  }, [loadingStates, imageErrors, handleImageAction, handleImageError]);
 
   /**
    * Product image placeholder component
@@ -223,57 +183,96 @@ export default function ProductDetail({
 
   return (
     <div className="detail-view-container">
-      {/* Header with back button and title */}
-      <div className="detail-header">
-        <button 
-          className="detail-back-btn" 
-          onClick={onBack} 
-          aria-label="Go back to main view"
-          title="Back"
-        >
-          ←
-        </button>
-        <div className="detail-header-title">
-          {product.productName || 'Product Details'}
-        </div>
-      </div>
-
       {/* Scrollable Content */}
       <div className="detail-content">
+        {/* Clean Header - Minimal Back Button and Product Name */}
+        <Box style={{ marginTop: '32px', marginBottom: '24px' }}>
+          <Rows spacing="3u">
+            <div
+              onClick={onBack}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                cursor: 'pointer',
+                color: 'var(--ui-kit-color-text-secondary)',
+                fontSize: '14px',
+                fontWeight: '400'
+              }}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  onBack();
+                }
+              }}
+              aria-label="Go back to main view"
+            >
+              ← {product.productName || 'Product details'}
+            </div>
+          </Rows>
+        </Box>
+
         {/* Images Section */}
-        <div className="detail-section">
-          <h3 className="section-heading">Images</h3>
-          <div className="images-grid">
-            {hasImages ? (
-              images.map((imageUrl, index) => (
-                <DetailImage
-                  key={`image-${index}`}
-                  imageUrl={imageUrl}
-                  altText={`${product.productName} - Image ${index + 1}`}
-                  index={index}
-                />
-              ))
-            ) : (
-              <ImagePlaceholder />
-            )}
-          </div>
-        </div>
+        <Box style={{ marginTop: '60px' }}>
+          <Rows spacing="2u">
+            <div className="images-grid">
+              {hasImages ? (
+                images.map((imageUrl, index) => {
+                  const key = `image-${index}`;
+                  const isLoading = loadingStates[key];
+                  const hasError = imageErrors[index];
+                  const altText = `${product.productName} - Image ${index + 1}`;
+
+                  if (hasError) {
+                    return (
+                      <Box key={`image-${index}`}>
+                        <Rows spacing="1u" align="center">
+                          <Text size="small">🖼️</Text>
+                          <Text size="small" color="secondary">Image unavailable</Text>
+                        </Rows>
+                      </Box>
+                    );
+                  }
+
+                  return (
+                    <ImageCard
+                      key={`image-${index}`}
+                      thumbnailUrl={imageUrl}
+                      alt={altText}
+                      ariaLabel={`Add ${altText} to design`}
+                      loading={isLoading}
+                      onClick={() => handleImageAction(imageUrl, altText, key)}
+                      onDragStart={(e) => handleImageAction(imageUrl, altText, key, e)}
+                    />
+                  );
+                })
+              ) : (
+                <Box>
+                  <Rows spacing="2u" align="center">
+                    <Text size="small">📦</Text>
+                    <Text size="small" color="secondary">No images available</Text>
+                  </Rows>
+                </Box>
+              )}
+            </div>
+          </Rows>
+        </Box>
 
         {/* Details Section */}
-        <div className="detail-section">
-          <h3 className="section-heading">Details</h3>
-          <div className="details-grid">
-            
+        <Box style={{ marginTop: '32px' }}>
+          <Rows spacing="2u">
+            <Title size="small">Details</Title>
+
             {/* WhatsApp Link */}
             {phoneNumber && product.skuCode && (
-              <div className="detail-field">
-                <WhatsAppLink 
-                  phoneNumber={phoneNumber}
-                  skuCode={product.skuCode}
-                />
-              </div>
+              <WhatsAppLink
+                phoneNumber={phoneNumber}
+                skuCode={product.skuCode}
+              />
             )}
-            
+
             {/* Basic Information */}
             <DetailField
               label="Title"
@@ -320,25 +319,25 @@ export default function ProductDetail({
 
             {/* Specifications */}
             <DetailField
-              label="Pack Size"
+              label="Pack size"
               value={product.packSize}
               elementKey="pack-size"
             />
 
             <DetailField
-              label="Base Unit"
+              label="Base unit"
               value={product.baseUnit}
               elementKey="base-unit"
             />
 
             <DetailField
-              label="Gross Weight"
+              label="Gross weight"
               value={product.grossWeight}
               elementKey="gross-weight"
             />
 
             <DetailField
-              label="Net Weight"
+              label="Net weight"
               value={product.netWeight}
               elementKey="net-weight"
             />
@@ -351,7 +350,7 @@ export default function ProductDetail({
             />
 
             <DetailField
-              label="Tax Category"
+              label="Tax category"
               value={product.taxCategory}
               elementKey="tax-category"
             />
@@ -366,55 +365,55 @@ export default function ProductDetail({
 
             {/* Order Information */}
             <DetailField
-              label="Case Size"
+              label="Case size"
               value={product.caseSize}
               elementKey="case-size"
             />
 
             <DetailField
-              label="Min Order Quantity"
+              label="Min order quantity"
               value={product.minOrderQuantity}
               elementKey="min-order-qty"
             />
 
             <DetailField
-              label="Max Order Quantity"
+              label="Max order quantity"
               value={product.maxOrderQuantity}
               elementKey="max-order-qty"
             />
 
             <DetailField
-              label="Quantity Multiplier"
+              label="Quantity multiplier"
               value={product.quantityMultiplier}
               elementKey="qty-multiplier"
             />
 
             <DetailField
-              label="Display Order"
+              label="Display order"
               value={product.displayOrder}
               elementKey="display-order"
             />
 
             <DetailField
-              label="CFA Names"
+              label="CFA names"
               value={Array.isArray(product.cfaNames) ? product.cfaNames.join(', ') : product.cfaNames}
               elementKey="cfa-names"
             />
-          </div>
-        </div>
+          </Rows>
+        </Box>
 
 
         {/* Drag and Drop Help */}
-        <div className="detail-section">
-          <div className="help-section">
-            <div className="help-content">
+        <Box>
+          <Rows spacing="1u">
+            <Text size="small" color="secondary">
               <strong>💡 Tip:</strong> Click any field or image to add it to your design, or drag it directly onto your canvas.
-              {!features.canDragToPoint && !features.canDragToCursor && 
+              {!features.canDragToPoint && !features.canDragToCursor &&
                 " Drag and drop may not be available in all design types."
               }
-            </div>
-          </div>
-        </div>
+            </Text>
+          </Rows>
+        </Box>
       </div>
     </div>
   );

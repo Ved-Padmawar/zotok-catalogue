@@ -9,23 +9,23 @@
  * @returns {string} WhatsApp link
  */
 export function generateWhatsAppLink(phoneNumber, skuCode) {
-  if (!phoneNumber || !skuCode) {
+  if (!phoneNumber || !skuCode || typeof phoneNumber !== 'string' || typeof skuCode !== 'string') {
     return '';
   }
-  
+
   // Remove all non-digit characters from phone number
-  const cleanPhone = phoneNumber.replace(/\D/g, '');
-  
+  const cleanPhone = String(phoneNumber).replace(/\D/g, '');
+
   if (!cleanPhone) {
     return '';
   }
-  
+
   // Create the message text: "skuCode - <your quantity>"
-  const messageText = `${skuCode} - <your quantity>`;
-  
+  const messageText = `${String(skuCode)} - <your quantity>`;
+
   // URL encode the message text
   const encodedMessage = encodeURIComponent(messageText);
-  
+
   // Generate the WhatsApp link
   return `https://wa.me/${cleanPhone}?text=${encodedMessage}`;
 }
@@ -39,8 +39,8 @@ export function isValidPhoneNumber(phoneNumber) {
   if (!phoneNumber || typeof phoneNumber !== 'string') {
     return false;
   }
-  
-  const cleanPhone = phoneNumber.replace(/\D/g, '');
+
+  const cleanPhone = String(phoneNumber).replace(/\D/g, '');
   return cleanPhone.length >= 10 && cleanPhone.length <= 15;
 }
 
@@ -50,12 +50,12 @@ export function isValidPhoneNumber(phoneNumber) {
  * @returns {string} Formatted phone number
  */
 export function formatPhoneNumber(phoneNumber) {
-  if (!phoneNumber) {
+  if (!phoneNumber || typeof phoneNumber !== 'string') {
     return '';
   }
-  
-  const cleanPhone = phoneNumber.replace(/\D/g, '');
-  
+
+  const cleanPhone = String(phoneNumber).replace(/\D/g, '');
+
   if (cleanPhone.length === 10) {
     // Format as: (xxx) xxx-xxxx
     return `(${cleanPhone.slice(0, 3)}) ${cleanPhone.slice(3, 6)}-${cleanPhone.slice(6)}`;

@@ -8,7 +8,7 @@ import "./styles/modern-components.css";
 
 // Enhanced error logging for debugging
 window.addEventListener("error", (event) => {
-  console.error("🚨 Global Error:", {
+  console.error("Global Error:", {
     message: event.message,
     filename: event.filename,
     lineno: event.lineno,
@@ -18,7 +18,7 @@ window.addEventListener("error", (event) => {
 });
 
 window.addEventListener("unhandledrejection", (event) => {
-  console.error("🚨 Unhandled Promise Rejection:", {
+  console.error("Unhandled Promise Rejection:", {
     reason: event.reason,
     promise: event.promise,
   });
@@ -31,13 +31,7 @@ if (typeof window !== "undefined") {
     const perfData = performance.getEntriesByType(
       "navigation",
     )[0] as PerformanceNavigationTiming;
-    console.log("⚡ App Performance:", {
-      domContentLoaded: Math.round(
-        perfData.domContentLoadedEventEnd - perfData.domContentLoadedEventStart,
-      ),
-      loadComplete: Math.round(perfData.loadEventEnd - perfData.loadEventStart),
-      totalLoadTime: Math.round(perfData.loadEventEnd - perfData.startTime),
-    });
+    // Performance data available for debugging if needed
   });
 
   // Monitor memory usage in development
@@ -49,7 +43,7 @@ if (typeof window !== "undefined") {
 
         if (memUsage > 100) {
           // Warn if over 100MB
-          console.warn("⚠️ High memory usage:", memUsage + "MB");
+          console.warn("High memory usage:", memUsage + "MB");
         }
       }
     }, 30000); // Check every 30 seconds
@@ -73,7 +67,7 @@ function render() {
 // Enhanced development features
 if (module.hot) {
   module.hot.accept("./app", () => {
-    console.log("🔄 Hot reloading app...");
+    // Hot reloading app
     render();
   });
 
@@ -81,7 +75,7 @@ if (module.hot) {
   if (process.env.NODE_ENV === "development") {
     module.hot.accept(() => {
       console.clear();
-      console.log("🚀 Zotok Product Browser - Development Mode");
+      // Development mode
     });
   }
 }
@@ -91,8 +85,5 @@ render();
 
 // Development helpers
 if (process.env.NODE_ENV === "development") {
-  console.log("🚀 Zotok Product Browser - Development Mode");
-  console.log("📱 Optimized for Canva Sidebar (800x600)");
-  console.log("🎨 Theme: Auto-detecting light/dark mode");
-  console.log("🔧 Features: Drag & Drop, Search, CORS-aware images");
+  // Development mode features available
 }

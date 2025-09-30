@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { TextInput, SearchIcon, HorizontalCard, Badge, Title, Text, Button, Rows } from "@canva/app-ui-kit";
 import { zotokApi } from "../services/zotokApi.jsx";
 import { useDragDrop } from "../hooks/useDragDrop.jsx";
-import { 
-  APP_CONFIG, 
-  PERFORMANCE, 
+import {
+  APP_CONFIG,
+  PERFORMANCE,
   ERROR_MESSAGES,
   CURRENCY
 } from "../utils/constants.jsx";
@@ -92,20 +93,18 @@ export default function ProductList({
   /**
    * Debounced search handler
    */
-  const handleSearchChange = useCallback((e) => {
-    const value = e.target.value;
-    setSearchQuery(value);
-    
+  const handleSearchChange = useCallback((value) => {
+    const safeValue = value || '';
+    setSearchQuery(safeValue);
+
     // Clear existing timeout
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
     }
-    
+
     // Optional: Add search analytics after debounce
     searchTimeoutRef.current = setTimeout(() => {
-      if (value.trim()) {
-        console.log('Search performed:', value);
-      }
+      // Search analytics could be added here if needed
     }, PERFORMANCE.DEBOUNCE_SEARCH_MS);
   }, []);
 
@@ -193,6 +192,7 @@ export default function ProductList({
    * Handles scroll events for infinite loading
    */
   const handleScroll = useCallback((event) => {
+    // Don't load more pages if searching (client-side filtering) or no more pages available
     if (!hasMorePages || isLoadingMore || searchQuery.trim()) return;
     
     const { scrollTop, scrollHeight, clientHeight } = event.target;
@@ -321,28 +321,29 @@ export default function ProductList({
 
       {/* Search Section */}
       <div className="search-section">
-        <div className="search-input-wrapper">
-          <div className="search-icon">
-            <svg className="icon" viewBox="0 0 24 24"><path d="M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM21 21l-4.35-4.35"/></svg>
-          </div>
-          <input
-            className="search-input"
-            type="text"
-            placeholder="Search products..."
-            value={searchQuery}
-            onChange={handleSearchChange}
-          />
-          {searchQuery && (
+        <TextInput
+          placeholder="Search products..."
+          value={searchQuery || ''}
+          onChange={handleSearchChange}
+          start={<SearchIcon style={{ color: 'var(--ui-kit-color-text-secondary)' }} />}
+          end={searchQuery && (
             <button
-              className="search-clear-btn"
               onClick={handleClearSearch}
+              style={{
+                fontSize: '18px',
+                color: 'var(--ui-kit-color-text-secondary)',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                padding: '4px'
+              }}
               aria-label="Clear search"
             >
-              <svg className="icon icon-sm" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+              ×
             </button>
           )}
-        </div>
-        
+        />
+
         <div className="search-results-info">
           <span className="results-badge">{filteredProducts.length}</span>
           result{filteredProducts.length !== 1 ? 's' : ''}
@@ -365,87 +366,50 @@ export default function ProductList({
               const isLoadingDrag = dragLoadingStates[productId];
               
               return (
-                <div 
+                <HorizontalCard
                   key={productId}
-                  className={`product-list-item ${isLoadingDrag ? 'loading' : ''}`}
+                  thumbnail={imageUrl ? { url: imageUrl, alt: product.productName || 'Product image' } : undefined}
+                  title={product.productName || 'Unnamed Product'}
+                  description={product.skuCode ? `SKU: ${product.skuCode}` : (product.categoryName || 'No SKU')}
+                  decorators={price ? [<Badge key="price">{price}</Badge>] : []}
                   onClick={() => onProductSelect(product)}
                   onDragStart={(e) => handleProductDragWithLoading(e, product)}
                   onKeyDown={(e) => handleProductKeyDown(e, product)}
                   draggable={!isLoadingDrag}
-                  tabIndex={0}
-                  role="button"
-                  aria-label={`${product.productName || 'Product'}. ${price ? `Price: ${price}. ` : ''}Click to view details`}
-                >
-                  {/* Product Image - 56x56px */}
-                  <div className="product-image">
-                    {imageUrl ? (
-                      <img
-                        src={imageUrl}
-                        alt={product.productName || 'Product'}
-                        onError={(e) => {
-                          e.target.style.display = 'none';
-                          e.target.nextSibling.style.display = 'flex';
-                        }}
-                        loading="lazy"
-                      />
-                    ) : null}
-                    <div 
-                      className="product-image-placeholder"
-                      style={{ display: imageUrl ? 'none' : 'flex' }}
-                    >
-                      {product.productName ? product.productName.charAt(0).toUpperCase() : '?'}
-                    </div>
-                  </div>
-
-                  {/* Product Info - Two lines */}
-                  <div className="product-info">
-                    {/* Title line - Bold, primary text */}
-                    <div className="product-title">
-                      {product.productName || 'Unnamed Product'}
-                      {product.isEnabled === false && (
-                        <span className="product-status-inactive">Inactive</span>
-                      )}
-                    </div>
-                    
-                    {/* Category line - Smaller, secondary color */}
-                    <div className="product-category">
-                      {product.skuCode ? `SKU: ${product.skuCode}` : (product.categoryName || 'No SKU')}
-                      {price && (
-                        <span className="product-price-inline"> • {price}</span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Loading State Overlay */}
-                  {isLoadingDrag && (
-                    <div className="product-loading-overlay">
-                      <div className="loading-spinner small" />
-                    </div>
-                  )}
-                </div>
+                  ariaLabel={`${product.productName || 'Product'}. ${price ? `Price: ${price}. ` : ''}Click to view details`}
+                />
               );
             })}
           </div>
         ) : (
           <div className="empty-state">
-            <div className="empty-icon">📦</div>
-            <div className="empty-title">
-              {searchQuery ? 'No products found' : 'No products available'}
-            </div>
-            <div className="empty-message">
-              {searchQuery 
-                ? `No products match "${searchQuery}". Try a different search term.`
-                : 'There are no products available at this time.'
-              }
-            </div>
-            {searchQuery && (
-              <button
-                onClick={handleClearSearch}
-                className="clear-search-btn"
-              >
-                Clear search
-              </button>
-            )}
+            <Rows spacing="2u" align="center">
+              <div className="empty-icon">📦</div>
+              <Title size="small">
+                {searchQuery ? 'No products found' : "Nothing's here yet"}
+              </Title>
+              <Text size="small" color="secondary">
+                {searchQuery
+                  ? `No products match "${searchQuery}". Try a different search term.`
+                  : 'Add products to your account to get started'
+                }
+              </Text>
+              {searchQuery ? (
+                <Button
+                  variant="secondary"
+                  onClick={handleClearSearch}
+                >
+                  Clear search
+                </Button>
+              ) : (
+                <Button
+                  variant="primary"
+                  onClick={() => window.open('https://zotok.com', '_blank')}
+                >
+                  Go to Zotok Catalogue
+                </Button>
+              )}
+            </Rows>
           </div>
         )}
         

@@ -150,7 +150,7 @@ async function withRetry(apiCall, options = {}) {
         maxDelay
       );
       
-      console.warn(`API call failed (attempt ${attempt + 1}/${maxRetries + 1}). Retrying in ${delay}ms...`);
+      // API call failed, retrying
       await new Promise(resolve => setTimeout(resolve, delay));
     }
   }

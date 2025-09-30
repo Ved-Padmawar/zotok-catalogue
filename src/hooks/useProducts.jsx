@@ -110,7 +110,7 @@ export function useProducts(options = {}) {
       const cachedData = getCachedData(cacheKey);
       
       if (cachedData) {
-        console.log(`Using cached data for page ${page}`);
+        // Using cached data
         
         if (append) {
           setProducts(prev => [...prev, ...cachedData.products]);

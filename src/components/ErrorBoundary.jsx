@@ -54,7 +54,7 @@ export class ErrorBoundary extends Component {
       url: window.location.href
     };
 
-    console.log('Error report generated:', errorReport);
+    // Error report generated
     // TODO: Send to error reporting service (Sentry, LogRocket, etc.)
   };
 
@@ -93,7 +93,7 @@ function ErrorBoundaryFallback({ error, errorInfo, errorId, onRetry }) {
   const sendReport = () => {
     // Simulate sending report
     setReportSent(true);
-    console.log('Error report sent for:', errorId);
+    // Error report sent
   };
 
   const reloadPage = () => {

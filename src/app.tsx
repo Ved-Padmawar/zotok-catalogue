@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { AppUiProvider } from "@canva/app-ui-kit";
+import { AppUiProvider, Tabs, TabList, Tab, TabPanels, TabPanel, FormField, TextInput, Button, Rows } from "@canva/app-ui-kit";
 import { auth } from "@canva/user";
 import AuthForm from "./components/AuthForm.jsx";
 import ProductList from "./components/ProductList.jsx";
@@ -17,7 +17,6 @@ const retryRequest = async (
     try {
       return await requestFn();
     } catch (error) {
-      console.warn(`Request attempt ${i + 1} failed:`, error);
       if (i === maxRetries - 1) throw error;
       await new Promise((resolve) => setTimeout(resolve, delay));
     }
@@ -29,7 +28,7 @@ type ActiveTab = "products" | "settings";
 
 export const App = () => {
   const [currentView, setCurrentView] = useState<AppView>("login");
-  const [activeTab, setActiveTab] = useState<ActiveTab>("products");
+  const [, setActiveTab] = useState<ActiveTab>("products");
   const [authToken, setAuthToken] = useState<string | null>(null);
   const [canvaUserId, setCanvaUserId] = useState<string>("");
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -55,9 +54,9 @@ export const App = () => {
         if (canvas.includes('rgb')) {
           const match = canvas.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
           if (match) {
-            const r = parseInt(match[1]);
-            const g = parseInt(match[2]);
-            const b = parseInt(match[3]);
+            const r = parseInt(match[1], 10);
+            const g = parseInt(match[2], 10);
+            const b = parseInt(match[3], 10);
             // Calculate luminance
             const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
             theme = luminance > 0.5 ? 'light' : 'dark';
@@ -120,7 +119,6 @@ export const App = () => {
 
   const initializeApp = async () => {
     try {
-      console.log("🚀 Initializing Zotok Product Browser...");
 
       const userToken = await auth.getCanvaUserToken();
       if (userToken) {
@@ -132,7 +130,6 @@ export const App = () => {
         // Check for stored token in sessionStorage first (faster)
         const storedToken = sessionStorage.getItem("zotok_login_token");
         if (storedToken) {
-          console.log("📱 Using cached session token");
           setAuthToken(storedToken);
           setCurrentView("main");
           await loadUserSettings(userId);
@@ -140,22 +137,18 @@ export const App = () => {
         }
 
         // Check backend for stored token
-        console.log("🔍 Checking for stored token...");
         const tokenResponse = await retryRequest(() =>
           authService.getStoredToken(userId),
         );
         if (tokenResponse.success && tokenResponse.token) {
-          console.log("💾 Found stored token");
           setAuthToken(tokenResponse.token);
           sessionStorage.setItem("zotok_login_token", tokenResponse.token);
           setCurrentView("main");
           await loadUserSettings(userId);
         } else {
-          console.log("🔐 No valid token found, showing auth");
           setCurrentView("login");
         }
       } else {
-        console.warn("⚠️ No Canva user token available");
         setCurrentView("login");
       }
     } catch (error) {
@@ -180,17 +173,17 @@ export const App = () => {
       if (response.ok) {
         const data = await response.json();
         if (data.success && data.phoneNumber) {
-          setPhoneNumber(data.phoneNumber);
-          setTempPhoneNumber(data.phoneNumber);
+          const safePhoneNumber = String(data.phoneNumber || '');
+          setPhoneNumber(safePhoneNumber);
+          setTempPhoneNumber(safePhoneNumber);
         } else {
           setPhoneNumber("");
           setTempPhoneNumber("");
         }
       } else {
-        console.warn("Settings response not ok:", response.status);
       }
     } catch (error) {
-      console.warn("📱 Could not load user settings:", error);
+      // Settings loading failed, continue silently
     }
   };
 
@@ -200,72 +193,85 @@ export const App = () => {
     clientSecret: string;
   }) => {
     try {
-      console.log("🔑 Attempting authentication...");
       setAuthError("");
+
+      if (!credentials || !credentials.workspaceId || !credentials.clientId || !credentials.clientSecret) {
+        setAuthError("Invalid credentials provided");
+        return;
+      }
 
       const response = await authService.login({
         ...credentials,
         canvaUserId,
       });
 
-      if (response.success && response.token) {
-        console.log("✅ Authentication successful");
+      if (response?.success && response?.token) {
         setAuthToken(response.token);
         sessionStorage.setItem("zotok_login_token", response.token);
         setCurrentView("main");
         await loadUserSettings(canvaUserId);
       } else {
-        console.error("❌ Authentication failed:", response.error);
-        setAuthError(response.error || "Authentication failed");
+        console.error("Authentication failed:", response?.error || 'Unknown error');
+        setAuthError(response?.error || "Authentication failed");
       }
     } catch (error) {
-      console.error("💥 Authentication error:", error);
+      console.error("Authentication error:", error);
       setAuthError("Network error during authentication");
     }
   };
 
   const handleLogout = () => {
-    console.log("👋 Logging out...");
-    setAuthToken(null);
-    sessionStorage.removeItem("zotok_login_token");
-    setCurrentView("login");
-    setAuthError("");
-    setSelectedProduct(null);
-    setActiveTab("products");
-    setPhoneNumber("");
-    setTempPhoneNumber("");
-    setIsEditingPhone(false);
-    setSettingsMessage("");
+    try {
+      setAuthToken(null);
+      sessionStorage.removeItem("zotok_login_token");
+      setCurrentView("login");
+      setAuthError("");
+      setSelectedProduct(null);
+      setActiveTab("products");
+      setPhoneNumber("");
+      setTempPhoneNumber("");
+      setIsEditingPhone(false);
+      setSettingsMessage("");
+    } catch (error) {
+      console.error('Error in handleLogout:', error);
+    }
   };
 
   const handleProductSelect = (product: Product) => {
-    console.log("📦 Product selected:", product.productName);
-    setSelectedProduct(product);
-    setCurrentView("detail");
+    try {
+      if (!product) {
+        console.error('Product is null or undefined');
+        return;
+      }
+      setSelectedProduct(product);
+      setCurrentView("detail");
+    } catch (error) {
+      console.error('Error in handleProductSelect:', error);
+    }
   };
 
   const handleBackToMain = () => {
-    console.log("⬅️ Returning to main view");
-    setSelectedProduct(null);
-    setCurrentView("main");
+    try {
+      setSelectedProduct(null);
+      setCurrentView("main");
+    } catch (error) {
+      console.error('Error in handleBackToMain:', error);
+    }
   };
 
   const handleTokenExpired = async (): Promise<boolean> => {
     try {
-      console.log("🔄 Attempting token refresh...");
       const response = await authService.refreshToken(canvaUserId);
       if (response.success && response.token) {
-        console.log("✅ Token refreshed successfully");
         setAuthToken(response.token);
         sessionStorage.setItem("zotok_login_token", response.token);
         return true;
       } else {
-        console.warn("❌ Token refresh failed, logging out");
         handleLogout();
         return false;
       }
     } catch (error) {
-      console.error("💥 Token refresh error:", error);
+      console.error("Token refresh error:", error);
       handleLogout();
       return false;
     }
@@ -273,27 +279,40 @@ export const App = () => {
 
 
   const handleEditPhone = () => {
-    setIsEditingPhone(true);
-    setTempPhoneNumber(phoneNumber);
-    setSettingsMessage("");
+    try {
+      setIsEditingPhone(true);
+      setTempPhoneNumber(phoneNumber || '');
+      setSettingsMessage("");
+    } catch (error) {
+      console.error('Error in handleEditPhone:', error);
+    }
   };
 
   const handleCancelEdit = () => {
-    setIsEditingPhone(false);
-    setTempPhoneNumber(phoneNumber);
-    setSettingsMessage("");
+    try {
+      setIsEditingPhone(false);
+      setTempPhoneNumber(phoneNumber || '');
+      setSettingsMessage("");
+    } catch (error) {
+      console.error('Error in handleCancelEdit:', error);
+    }
   };
 
   const saveSettings = async () => {
-    if (!tempPhoneNumber.trim()) {
-      setSettingsMessage("Please enter a phone number");
-      return;
-    }
-
-    setIsLoadingSettings(true);
-    setSettingsMessage("");
-
     try {
+      if (!tempPhoneNumber?.trim()) {
+        setSettingsMessage("Please enter a phone number");
+        return;
+      }
+
+      if (!authToken) {
+        setSettingsMessage("Authentication required to save settings");
+        return;
+      }
+
+      setIsLoadingSettings(true);
+      setSettingsMessage("");
+
       const response = await fetch(`${BACKEND_HOST}/api/user/settings`, {
         method: "POST",
         headers: {
@@ -302,19 +321,19 @@ export const App = () => {
         },
         body: JSON.stringify({
           canvaUserId,
-          phoneNumber: tempPhoneNumber.trim(),
+          phoneNumber: String(tempPhoneNumber || '').trim(),
         }),
       });
 
       const data = await response.json();
 
-      if (data.success) {
-        setPhoneNumber(tempPhoneNumber.trim());
+      if (data?.success) {
+        setPhoneNumber(String(tempPhoneNumber || '').trim());
         setIsEditingPhone(false);
         setSettingsMessage("Settings saved successfully!");
         setTimeout(() => setSettingsMessage(""), 3000);
       } else {
-        setSettingsMessage(data.error || "Failed to save settings");
+        setSettingsMessage(data?.error || "Failed to save settings");
       }
     } catch (error) {
       console.error("Settings save error:", error);
@@ -344,7 +363,7 @@ export const App = () => {
                         <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
                       </svg>
                     </div>
-                    <div className="login-title">Connect to Zotok</div>
+                    <div className="login-title">Connect to zotok</div>
                   </div>
                 </div>
                 <div className="login-subtitle">
@@ -357,143 +376,105 @@ export const App = () => {
         )}
 
         {currentView === "main" && (
-          <div id="main-view" className="main-view">
-            <div className="main-header">
-              <div className="header-content">
-                <div className="header-icon">
-                  <svg className="icon icon-lg" viewBox="0 0 24 24">
-                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-                  </svg>
-                </div>
-                <h1 className="main-title">Zotok Browser</h1>
-              </div>
-            </div>
+          <div id="main-view" className="main-view" style={{ paddingTop: '8px' }}>
+            <Tabs defaultActiveId="products" height="fill" onSelect={(activeId) => setActiveTab(activeId as ActiveTab)}>
+              <TabList>
+                <Tab id="products">Products</Tab>
+                <Tab id="settings">Settings</Tab>
+              </TabList>
 
-            <div className="tab-container">
-              <button
-                className={`tab ${activeTab === "products" ? "active" : ""}`}
-                onClick={() => setActiveTab("products")}
-              >
-                <svg className="icon" viewBox="0 0 24 24">
-                  <path d="M20 7H4a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z" />
-                  <path d="M14 2H10a2 2 0 0 0-2 2v5h8V4a2 2 0 0 0-2-2z" />
-                </svg>
-                Products
-              </button>
-              <button
-                className={`tab ${activeTab === "settings" ? "active" : ""}`}
-                onClick={() => setActiveTab("settings")}
-              >
-                <svg className="icon" viewBox="0 0 24 24">
-                  <circle cx="12" cy="12" r="3" />
-                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
-                </svg>
-                Settings
-              </button>
-            </div>
+              <TabPanels>
+                <TabPanel id="products">
+                  <ProductList
+                    authToken={authToken!}
+                    onProductSelect={handleProductSelect}
+                    onTokenExpired={handleTokenExpired}
+                  />
+                </TabPanel>
 
-            <div className="tab-content">
-              {activeTab === "products" && (
-                <ProductList
-                  authToken={authToken!}
-                  onProductSelect={handleProductSelect}
-                  onTokenExpired={handleTokenExpired}
-                />
-              )}
-
-              {activeTab === "settings" && (
-                <div className="settings-content">
-                  <div className="settings-form">
-                    <div className="settings-header">
-                      <div className="settings-icon">
-                        <svg className="icon icon-xl" viewBox="0 0 24 24">
-                          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                          <circle cx="12" cy="7" r="4" />
-                        </svg>
-                      </div>
-                      <div className="login-title">User Settings</div>
-                      <div className="login-subtitle">
-                        Configure your preferences.
-                      </div>
-                    </div>
-
-                    <div className="form-group">
-                      <label htmlFor="phoneNumber" className="form-label">
-                        Phone Number
-                      </label>
-
+                <TabPanel id="settings">
+                  <div style={{ padding: 'var(--space-md)' }}>
+                    <Rows spacing="2u">
                       {phoneNumber && !isEditingPhone ? (
-                        // View mode - show existing phone number with pencil icon inside
-                        <div style={{ position: "relative" }}>
-                          <input
-                            type="text"
-                            className="form-input"
-                            value={phoneNumber}
-                            disabled
-                            readOnly
-                            style={{ paddingRight: "40px" }}
-                          />
-                          <button
-                            type="button"
-                            onClick={handleEditPhone}
-                            className="phone-edit-btn"
-                            aria-label="Edit phone number"
-                            title="Edit phone number"
-                          >
-                            <svg className="icon" viewBox="0 0 24 24">
-                              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                              <path d="m18.5 2.5 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                            </svg>
-                          </button>
-                        </div>
+                        // View mode - show existing phone number with edit button
+                        <FormField
+                          label="Phone number"
+                          control={(props) => (
+                            <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                              <div style={{ flex: 1 }}>
+                                <TextInput
+                                  {...props}
+                                  value={phoneNumber || ''}
+                                  disabled
+                                />
+                              </div>
+                              <Button
+                                variant="secondary"
+                                onClick={handleEditPhone}
+                                aria-label="Edit phone number"
+                              >
+                                Edit
+                              </Button>
+                            </div>
+                          )}
+                        />
                       ) : (
                         // Edit mode OR no phone number - show editable input
-                        <div className="phone-input-container">
-                          <input
-                            id="phoneNumber"
-                            type="tel"
-                            className="form-input"
-                            value={tempPhoneNumber}
-                            onChange={(e) => setTempPhoneNumber(e.target.value)}
-                            placeholder="Enter your phone number"
-                            disabled={isLoadingSettings}
+                        <>
+                          <FormField
+                            label="Phone number"
+                            control={(props) => (
+                              <TextInput
+                                {...props}
+                                type="tel"
+                                value={tempPhoneNumber || ''}
+                                onChange={setTempPhoneNumber}
+                                placeholder="Enter your phone number"
+                                disabled={isLoadingSettings}
+                              />
+                            )}
                           />
 
-                          <div className="phone-edit-actions">
-                            <button
-                              className="phone-save-btn"
-                              onClick={saveSettings}
-                              disabled={
-                                isLoadingSettings || !tempPhoneNumber.trim()
-                              }
+                          <Button
+                            variant="primary"
+                            onClick={saveSettings}
+                            disabled={isLoadingSettings || !tempPhoneNumber.trim()}
+                            stretch
+                          >
+                            {isLoadingSettings ? "Saving..." : "Save"}
+                          </Button>
+
+                          {phoneNumber && (
+                            <Button
+                              variant="secondary"
+                              onClick={handleCancelEdit}
+                              disabled={isLoadingSettings}
+                              stretch
                             >
-                              {isLoadingSettings ? "Saving..." : "Save"}
-                            </button>
-                            {phoneNumber && (
-                              <button
-                                className="phone-cancel-btn"
-                                onClick={handleCancelEdit}
-                                disabled={isLoadingSettings}
-                              >
-                                Cancel
-                              </button>
-                            )}
-                          </div>
-                        </div>
+                              Cancel
+                            </Button>
+                          )}
+                        </>
                       )}
-                    </div>
+                    </Rows>
 
                     {settingsMessage && (
-                      <div
-                        className={`settings-message ${settingsMessage.includes("success") ? "success" : "error"}`}
-                      >
+                      <div style={{
+                        marginTop: 'var(--space-md)',
+                        padding: 'var(--space-sm)',
+                        borderRadius: 'var(--radius-md)',
+                        fontSize: 'var(--text-sm)',
+                        textAlign: 'center',
+                        backgroundColor: settingsMessage.includes("success") ? 'var(--success-light)' : 'var(--error-light)',
+                        color: settingsMessage.includes("success") ? 'var(--success-color)' : 'var(--error-color)'
+                      }}>
                         {settingsMessage}
                       </div>
                     )}
                   </div>
-                </div>
-              )}
-            </div>
+                </TabPanel>
+              </TabPanels>
+            </Tabs>
           </div>
         )}
 

@@ -26,20 +26,13 @@ const makeCorsCompatibleUrl = useCallback((imageUrl) => {
   // Just return the original URL - Zotok images are publicly accessible
   if (!imageUrl || typeof imageUrl !== 'string') return imageUrl;
   
-  console.log('🔍 Original URL received:', imageUrl);
-  console.log('🔍 URL length:', imageUrl.length);
-  console.log('🔍 URL ends with:', imageUrl.slice(-10));
-  console.log('🔍 URL contains %27:', imageUrl.includes('%27'));
-  console.log('🔍 URL contains single quote:', imageUrl.includes("'"));
+  // URL analysis for debugging can be added here if needed
   
   return imageUrl;
 }, []);
 
   const uploadImageSafely = useCallback(async (imageUrl, altText) => {
-  console.log('🔄 Starting upload for:', imageUrl);
-  console.log('🔄 Alt text:', altText);
-  console.log('🔄 Image URL type:', typeof imageUrl);
-  console.log('🔄 Image URL length:', imageUrl?.length);
+  // Upload process starting
   
   if (!imageUrl || typeof imageUrl !== 'string') {
     console.error('❌ Invalid image URL passed to uploadImageSafely:', imageUrl);
@@ -48,12 +41,11 @@ const makeCorsCompatibleUrl = useCallback((imageUrl) => {
 
   const corsUrl = makeCorsCompatibleUrl(imageUrl);
   if (!corsUrl || typeof corsUrl !== 'string') {
-    console.error('❌ CORS URL generation failed');
+    console.error('CORS URL generation failed');
     throw new Error('CORS image URL generation failed');
   }
 
-  console.log('🔄 Using CORS URL:', corsUrl);
-  console.log('🔄 Original vs CORS URL same?', imageUrl === corsUrl);
+  // Using CORS-compatible URL
 
   // Detect MIME type from URL
   let mimeType = 'image/jpeg';
@@ -63,11 +55,10 @@ const makeCorsCompatibleUrl = useCallback((imageUrl) => {
   else if (urlLower.includes('.gif')) mimeType = 'image/gif';
   else if (urlLower.includes('.svg')) mimeType = 'image/svg+xml';
 
-  console.log('🔄 Detected MIME type:', mimeType);
-  console.log('🔄 Image dimensions:', DRAG_CONFIG.IMAGE_FULL_SIZE);
+  // MIME type and dimensions processed
 
   try {
-    console.log('🔄 Calling Canva upload API...');
+    // Calling Canva upload API
     
     const uploadParams = {
       type: 'image',
@@ -80,37 +71,27 @@ const makeCorsCompatibleUrl = useCallback((imageUrl) => {
       aiDisclosure: 'none',
     };
     
-    console.log('🔄 Upload parameters:', uploadParams);
+    // Upload parameters prepared
     
     const uploadResult = await upload(uploadParams);
     
-    console.log('✅ Upload successful!');
-    console.log('✅ Upload result:', uploadResult);
-    console.log('✅ Upload result type:', typeof uploadResult);
-    console.log('✅ Upload result keys:', Object.keys(uploadResult || {}));
+    // Upload successful
     
     return uploadResult;
     
   } catch (error) {
-    console.error('❌ Upload failed with error:', error);
-    console.error('❌ Error name:', error.name);
-    console.error('❌ Error message:', error.message);
-    console.error('❌ Error code:', error.code);
-    console.error('❌ Error stack:', error.stack);
-    console.error('❌ Full error object:', error);
+    console.error('Upload failed with error:', error);
     
     // Additional error details
     if (error.response) {
-      console.error('❌ Error response:', error.response);
+      // Error response details available for debugging
     }
     if (error.request) {
-      console.error('❌ Error request:', error.request);
+      // Error request details available for debugging
     }
     
     // Log the URL that failed
-    console.error('❌ Failed URL:', corsUrl);
-    console.error('❌ Original URL:', imageUrl);
-    console.error('❌ MIME type used:', mimeType);
+    console.error('Failed URL:', corsUrl);
     
     throw new Error(`Image upload failed: ${error.message || 'Unknown error'}`);
   }
@@ -120,24 +101,23 @@ const makeCorsCompatibleUrl = useCallback((imageUrl) => {
     try {
       event.preventDefault();
 
-      console.log('Starting product drag for:', product.productName);
-      console.log('Product images:', product.productImages);
+      // Starting product drag
 
       let imageUrl = await getBestProductImage(product.productImages, product.productName);
       if (!imageUrl) {
-        console.warn('No valid image found. Using SVG fallback.');
+        // No valid image found, using SVG fallback
         imageUrl = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="300" height="200"><text x="10" y="100" font-size="20" fill="black">No Image</text></svg>`;
       }
 
-      console.log('Image URL to use:', imageUrl);
+      // Image URL determined
       const isSvgFallback = imageUrl.startsWith('data:image/svg+xml');
-      console.log('Is SVG fallback:', isSvgFallback);
+      // SVG fallback status determined
 
       if (isSvgFallback) {
-        console.log('Using text drag for SVG fallback');
+        // Using text drag for SVG fallback
         await handleTextDrag(event, product);
       } else {
-        console.log('Using image drag for real image');
+        // Using image drag for real image
         await handleImageDrag(event, product, imageUrl);
       }
     } catch (error) {
@@ -148,7 +128,7 @@ const makeCorsCompatibleUrl = useCallback((imageUrl) => {
         error: error.message || error
       });
       try {
-        console.log('Falling back to text drag');
+        // Falling back to text drag
         await handleTextDrag(event, product);
       } catch (fallbackError) {
         console.error('Fallback text drag also failed:', fallbackError);
@@ -159,22 +139,22 @@ const makeCorsCompatibleUrl = useCallback((imageUrl) => {
 
   const handleImageDrag = useCallback(async (event, product, imageUrl) => {
     if (!imageUrl || typeof imageUrl !== 'string') {
-      console.warn('Skipping image drag: invalid imageUrl', imageUrl);
+      // Skipping image drag: invalid imageUrl
       return;
     }
 
     const altText = `${DESIGN_CONFIG.ALT_TEXT_PREFIX}${product.productName}`;
     const corsUrl = makeCorsCompatibleUrl(imageUrl);
 
-    console.log('Starting image drag with URL:', corsUrl);
+    // Starting image drag
 
     const dragData = {
       type: 'image',
       resolveImageRef: async () => {
         try {
-          console.log('Attempting to upload image:', corsUrl);
+          // Attempting to upload image
           const result = await uploadImageSafely(corsUrl, altText);
-          console.log('Image upload successful:', result);
+          // Image upload successful
           return result;
         } catch (error) {
           console.error('Image upload failed during drag:', error);
@@ -188,10 +168,10 @@ const makeCorsCompatibleUrl = useCallback((imageUrl) => {
 
     try {
       if (canDragToPoint && CONTENT_SUPPORT.startDragToPoint.includes('image')) {
-        console.log('Using startDragToPoint for image');
+        // Using startDragToPoint for image
         ui.startDragToPoint(event, dragData);
       } else if (canDragToCursor && CONTENT_SUPPORT.startDragToCursor.includes('image')) {
-        console.log('Using startDragToCursor for image');
+        // Using startDragToCursor for image
         ui.startDragToCursor(event, dragData);
       } else {
         throw new Error('No compatible drag method available for images');
@@ -224,7 +204,7 @@ const makeCorsCompatibleUrl = useCallback((imageUrl) => {
     try {
       let imageUrl = await getBestProductImage(product.productImages, product.productName);
       if (!imageUrl) {
-        console.warn('No valid image found. Using SVG fallback.');
+        // No valid image found, using SVG fallback
         imageUrl = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="300" height="200"><text x="10" y="100" font-size="20" fill="black">No Image</text></svg>`;
       }
 
@@ -306,14 +286,14 @@ const makeCorsCompatibleUrl = useCallback((imageUrl) => {
     }
 
     const corsUrl = makeCorsCompatibleUrl(imageUrl);
-    console.log('handleImageElement called with:', { imageUrl, corsUrl, altText, hasEvent: !!event });
+    // Image element handling started
 
     try {
       if (event) {
         const imageData = {
           type: 'image',
           resolveImageRef: async () => {
-            console.log('resolveImageRef called for image element');
+            // Resolving image reference
             return await uploadImageSafely(corsUrl, altText);
           },
           previewUrl: corsUrl,
@@ -321,19 +301,19 @@ const makeCorsCompatibleUrl = useCallback((imageUrl) => {
           fullSize: DRAG_CONFIG.IMAGE_FULL_SIZE,
         };
 
-        console.log('Starting image element drag with data:', imageData);
+        // Starting image element drag
 
         if (canDragToPoint) {
-          console.log('Using startDragToPoint for image element');
+          // Using startDragToPoint for image element
           ui.startDragToPoint(event, imageData);
         } else if (canDragToCursor) {
-          console.log('Using startDragToCursor for image element');
+          // Using startDragToCursor for image element
           ui.startDragToCursor(event, imageData);
         } else {
           throw new Error('Drag not supported for images');
         }
       } else {
-        console.log('Adding image element directly (no drag)');
+        // Adding image element directly (no drag)
         const asset = await uploadImageSafely(corsUrl, altText);
         const imageElement = { type: 'image', ref: asset.ref };
         if (canAddAtPoint) {

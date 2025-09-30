@@ -39,18 +39,14 @@ export default function ProductCard({ product, onClick, phoneNumber = '' }) {
   const getProductImage = useCallback(() => {
     if (!product.productImages) return null;
     
-    console.log('🔍 Raw product images:', product.productImages);
-    console.log('🔍 Product images type:', typeof product.productImages);
+    // Analyzing product images
     
     if (typeof product.productImages === 'string') {
       const urls = product.productImages.split(',').map(url => url.trim());
-      console.log('🔍 Parsed URLs:', urls);
-      console.log('🔍 First URL:', urls[0]);
-      console.log('🔍 First URL contains %27:', urls[0]?.includes('%27'));
+      // URLs parsed from string
       return urls[0] || null;
     } else if (Array.isArray(product.productImages)) {
-      console.log('🔍 Array URLs:', product.productImages);
-      console.log('🔍 First array URL:', product.productImages[0]);
+      // Using array URLs
       return product.productImages[0] || null;
     }
     

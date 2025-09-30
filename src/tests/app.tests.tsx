@@ -6,7 +6,7 @@ import { fireEvent, render } from "@testing-library/react";
 import type { RenderResult } from "@testing-library/react";
 import React from "react";
 import { useAddElement } from "utils/use_add_element";
-import { App, DOCS_URL } from "../app";
+import { App } from "../app";
 
 function renderInTestProvider(node: React.ReactNode): RenderResult {
   return render(
@@ -74,7 +74,7 @@ describe("Hello World Tests", () => {
 
     // assert that the requestOpenExternalUrl function was called with the expected arguments
     expect(mockRequestOpenExternalUrl.mock.calls[0][0]).toEqual({
-      url: DOCS_URL,
+      url: "https://www.canva.dev/docs/apps/",
     });
   });
 

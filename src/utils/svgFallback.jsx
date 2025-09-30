@@ -425,7 +425,7 @@ export async function getBestProductImage(
       try {
         const isValid = await checkImageUrl(imageUrl, timeout);
         if (isValid) {
-          console.log('✅ Valid image found:', imageUrl);
+          // Valid image found
           return imageUrl;
         }
       } catch (error) {
@@ -441,7 +441,7 @@ export async function getBestProductImage(
     }
   }
   
-  console.log('❌ All images failed, using SVG fallback');
+  // All images failed, using SVG fallback
   
   // All images failed, return SVG fallback
   return productName 
@@ -470,7 +470,7 @@ export function createImageErrorHandler(productName, options = {}) {
     // Mark as fallback applied to prevent infinite loops
     img.dataset.fallbackApplied = 'true';
     
-    console.log('🖼️ Image error, applying fallback for:', productName);
+    // Image error, applying fallback
     
     // Generate fallback SVG
     const fallbackSrc = productName 
